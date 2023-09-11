@@ -1,0 +1,219 @@
+local repo = 'https://raw.githubusercontent.com/wally-rblx/LinoriaLib/main/'
+
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
+
+local Window = Library:CreateWindow({
+
+    Title = 'Test Menu',
+    Center = false, 
+    AutoShow = true,
+})
+
+local Tabs = {
+    Main = Window:AddTab('Main'), 
+    ['UI Settings'] = Window:AddTab('UI Settings'),
+}
+
+--Values
+_G.autowin = true
+_G.autoblock = true
+
+
+getgenv().ScriptConfig = {
+    -- Distance in stud before the automatic triggers,
+    -- you may change even after you have ran the script if you desire!
+    -- Just be sure to REMOVE the loadstring, or else you will face some... issues
+    DistanceBeforeParry = 52,
+}
+
+
+--Functions
+
+function autowin()
+    while _G.autowin == true do
+    wait()  -- This will control the loop execution rate and prevent it from running too fast.
+
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local character = localPlayer.Character
+    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+
+    for _, ball in pairs(workspace.Balls:GetChildren()) do
+        if ball and humanoidRootPart then
+            local targetCFrame = CFrame.new(humanoidRootPart.Position, ball.Position)
+            humanoidRootPart.CFrame = targetCFrame
+
+            if character:FindFirstChild("Highlight") then
+                humanoidRootPart.CFrame = ball.CFrame * CFrame.new(6, 6, -ball.Velocity.Magnitude * 0.5)
+                game:GetService("ReplicatedStorage").Remotes.ParryButtonPress:Fire()
+            end
+        end
+    end
+end
+end
+
+-------------------------------------------------
+
+-- main UI
+local Main1 = Tabs.Main:AddLeftGroupbox('Main')
+local player1 = Tabs.Main:AddRightGroupbox('Player')
+
+Main1:AddToggle('autowin', {
+    Text = 'Auto Win 95%',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'Auto Win 95% / ออโต้ชนะ 95%', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        _G.autowin = Value
+		autowin()
+    end
+})
+
+Main1:AddToggle('autoblock', {
+    Text = 'Auto Parry',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'Auto Parry / ออโต้บล็อค', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Sussy-Tech/Scripts/main/BladeBall.lua"))()
+    end
+})
+
+-- player
+
+player1:AddSlider('speed', {
+    Text = 'Walkspeed',
+    Default = 16,
+    Min = 16,
+    Max = 500,
+    Rounding = 1,
+    Compact = true, -- If set to true, then it will hide the label
+        
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+    end
+})
+
+player1:AddSlider('fov', {
+    Text = 'Fov',
+    Default = 70,
+    Min = 70,
+    Max = 200,
+    Rounding = 0,
+    Compact = true, -- If set to true, then it will hide the label
+    Callback = function(Value)
+        game.workspace.CurrentCamera.FieldOfView = Value
+    end
+})
+
+local Giant = player1:AddButton({
+    Text = 'Giant',
+    Func = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/2jnKKARG", true))()
+    end,
+    DoubleClick = false,
+})
+
+local Rejoin = player1:AddButton({
+    Text = 'Rejoin',
+    Func = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/mM7JBG5h", true))()
+    end,
+    DoubleClick = false,
+    Tooltip = 'Rejoin / รีจอย',
+})
+
+local Noclip = player1:AddButton({
+    Text = 'Noclip',
+    Func = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/hd03Vdwm", true))()
+    end,
+    DoubleClick = false,
+    Tooltip = 'Noclip / ทะลุเเมพ',
+})
+
+local Reset = player1:AddButton({
+    Text = 'Reset',
+    Func = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/EEY6SATj", true))()
+    end,
+    DoubleClick = false,
+    Tooltip = 'Reset / รีเซ็ตตัว',
+})
+
+local RTX_Summer = player1:AddButton({
+    Text = 'RTX Summer',
+    Func = function()
+        loadstring(game:HttpGet("https://paste.ee/r/h4fL2", true))()
+    end,
+    DoubleClick = false,
+    Tooltip = 'graphics / กราฟิก',
+})
+
+local RTX_Autumn = player1:AddButton({
+    Text = 'RTX Autumn',
+    Func = function()
+        loadstring(game:HttpGet("https://paste.ee/r/9eV0M", true))()
+    end,
+    DoubleClick = false,
+    Tooltip = 'graphics / กราฟิก',
+})
+
+local Anti_Report = player1:AddButton({
+    Text = 'Anti-Report',
+    Func = function()
+        loadstring(game:HttpGet("https://paste.ee/r/GphmF", true))()
+    end,
+    DoubleClick = false,
+    Tooltip = 'Anti-Report / กันรีพอร์ต - กันเเบน',
+})
+
+local spoofname = player1:AddButton({
+    Text = 'Spoof Name',
+    Func = function()
+        loadstring(game:HttpGet("https://paste.ee/p/c6swQ", true))()
+    end,
+    DoubleClick = false,
+    Tooltip = 'Spoof Name / เปลื่ยนชื่อ',
+})
+
+
+-- UI Settings
+local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
+
+-- I set NoUI so it does not show up in the keybinds menu
+MenuGroup:AddButton('Unload', function() Library:Unload() end) 
+MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'Insert', NoUI = true, Text = 'Menu keybind' }) 
+
+Library.ToggleKeybind = Options.MenuKeybind -- Allows you to have a custom keybind for the menu
+
+-- Addons:
+-- SaveManager (Allows you to have a configuration system)
+-- ThemeManager (Allows you to have a menu theme system)
+
+-- Hand the library over to our managers
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+
+-- Ignore keys that are used by ThemeManager. 
+-- (we dont want configs to save themes, do we?)
+SaveManager:IgnoreThemeSettings() 
+
+-- Adds our MenuKeybind to the ignore list 
+-- (do you want each config to have a different menu key? probably not.)
+SaveManager:SetIgnoreIndexes({ 'MenuKeybind' }) 
+
+-- use case for doing it this way: 
+-- a script hub could have themes in a global folder
+-- and game configs in a separate folder per game
+ThemeManager:SetFolder('MyScriptHub')
+SaveManager:SetFolder('MyScriptHub/specific-game')
+
+-- Builds our config menu on the right side of our tab
+SaveManager:BuildConfigSection(Tabs['UI Settings']) 
+
+-- Builds our theme menu (with plenty of built in themes) on the left side
+-- NOTE: you can also call ThemeManager:ApplyToGroupbox to add it to a specific groupbox
+ThemeManager:ApplyToTab(Tabs['UI Settings'])
+
+-- You can use the SaveManager:LoadAutoloadConfig() to load a config 
+-- which has been marked to be one that auto loads!
