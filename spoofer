@@ -1,219 +1,253 @@
-local repo = 'https://raw.githubusercontent.com/wally-rblx/LinoriaLib/main/'
-
-local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
-local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
-local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
-
-local Window = Library:CreateWindow({
-
-    Title = 'Test Menu',
-    Center = false, 
-    AutoShow = true,
-})
-
-local Tabs = {
-    Main = Window:AddTab('Main'), 
-    ['UI Settings'] = Window:AddTab('UI Settings'),
+local new_name = "XNXX.COM001"
+local new_id = 104867 
+local clear_avatar = true -- So no one can reverse search by your outfit
+local flush_body_colors = true -- So no one can reverse search by your bodycolors
+local rename_instances = false -- Rename any instances that holds your name. (Not recomended unless you can see your name above your character)
+local change_id = false -- Change your player ID (not visually)
+local deep_scan = true -- Can get a bit laggy if there is a mass wave of new instances
+local filter_httpget = { -- Didn't seem like this would be helpful, but requested.
+    enabled = false, -- Turn on
+    result = true, -- Filter the results of the request
+    request = true -- Filter the url before requesting
 }
-
---Values
-_G.autowin = true
-_G.autoblock = true
-
-
-getgenv().ScriptConfig = {
-    -- Distance in stud before the automatic triggers,
-    -- you may change even after you have ran the script if you desire!
-    -- Just be sure to REMOVE the loadstring, or else you will face some... issues
-    DistanceBeforeParry = 52,
+ 
+ 
+local Players = assert(assert(game, "game missing?"):FindService("Players") or game:GetService("Players"), "Players missing?")
+local LocalPlayer = assert(Players.LocalPlayer, "LocalPlayer missing?")
+local CoreGui = game:FindService("CoreGui") or game:GetService("CoreGui")
+local PlayerGui = assert(LocalPlayer:FindFirstChild("PlayerGui"), "PlayerGui mising?")
+local RunService = assert(game:FindService("RunService") or game:GetService("RunService"), "RunService missing?")
+local replaces_str = {
+    Players.LocalPlayer.Name
 }
-
-
---Functions
-
-function autowin()
-    while _G.autowin == true do
-    wait()  -- This will control the loop execution rate and prevent it from running too fast.
-
-    local localPlayer = game:GetService("Players").LocalPlayer
-    local character = localPlayer.Character
-    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
-
-    for _, ball in pairs(workspace.Balls:GetChildren()) do
-        if ball and humanoidRootPart then
-            local targetCFrame = CFrame.new(humanoidRootPart.Position, ball.Position)
-            humanoidRootPart.CFrame = targetCFrame
-
-            if character:FindFirstChild("Highlight") then
-                humanoidRootPart.CFrame = ball.CFrame * CFrame.new(6, 6, -ball.Velocity.Magnitude * 0.5)
-                game:GetService("ReplicatedStorage").Remotes.ParryButtonPress:Fire()
+local replaces_num = {
+    tostring(Players.LocalPlayer.UserId)
+}
+new_name, new_id = tostring(new_name), tostring(new_id)
+local function casepatt(pattern)
+    return string.gsub(pattern, "(%%?)(.)", function(percent, letter)
+        if percent ~= "" or not string.match(letter, "%a") then
+            return percent .. letter
+        else
+            return string.format("[%s%s]", string.lower(letter), string.upper(letter))
+        end
+    end)
+end
+function replace(item, fast)
+    for replacewith, data in pairs({
+        [new_name] = replaces_str,
+        [new_id] = replaces_num
+    }) do
+        if not fast then
+            RunService.RenderStepped:Wait()
+        end
+        for _, v in pairs(data) do
+            if not fast then
+                RunService.RenderStepped:Wait()
+            end
+            for _, t in pairs({
+                "Text",
+                "Message",
+                "ToolTip",
+                "Value"
+            }) do
+                pcall(function()
+                    if string.find(item[t], v, nil, true) then
+                        item[t] = string.gsub(item[t], v, replacewith)
+                    elseif string.find(item[t], string.lower(v), nil, true) then
+                        item[t] = string.gsub(item[v], string.lower(v), string.lower(replacewith))
+                    elseif string.find(item[t], string.upper(v), nil, true) then
+                        item[t] = string.gsub(item[v], string.upper(v), string.upper(replacewith))
+                    elseif string.find(string.lower(item[t]), string.lower(v), nil, true) then
+                        item[t] = string.gsub(item[v], casepatt(v), replacewith)
+                    end
+                end)
+                if not fast then
+                    RunService.RenderStepped:Wait()
+                end
+            end
+            if not fast then
+                RunService.RenderStepped:Wait()
+            end
+            if rename_instances then
+                pcall(function()
+                    if string.find(item.Name, v, nil, true) then
+                        item.Name = string.gsub(item.Name, v, replacewith)
+                    elseif string.find(item.Name, string.lower(v), nil, true) then
+                        item.Name = string.gsub(item.Name, string.lower(v), string.lower(replacewith))
+                    elseif string.find(item.Name, string.upper(v), nil, true) then
+                        item.Name = string.gsub(item.Name, string.lower(v), string.upper(replacewith))
+                    elseif string.find(string.lower(item.Name), string.lower(v), nil, true) then
+                        item.Name = string.gsub(item.Name, casepatt(v), replacewith)
+                    end
+                end)
             end
         end
     end
 end
+shared.rep = replace
+local function scan_and_replace(fast)
+    local scan_que = {
+        CoreGui:GetDescendants(),
+        PlayerGui:GetDescendants(),
+        workspace:GetDescendants()
+    }
+    local last_break = 0
+    for _, items in pairs(scan_que) do
+        if not fast then
+            RunService.RenderStepped:Wait()
+        end
+        for _, gui in pairs(assert(type(items) == "table" and items, "scan_que does not hold a table")) do
+            last_break = 1 + last_break
+            if last_break >= 6000 then
+                RunService.RenderStepped:Wait()
+                last_break = 0
+            end
+            if not fast then
+                RunService.RenderStepped:Wait()
+            end
+            replace(gui, fast)
+        end
+    end
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if not fast then
+            RunService.RenderStepped:Wait()
+        end
+        replace(obj)
+    end
 end
-
--------------------------------------------------
-
--- main UI
-local Main1 = Tabs.Main:AddLeftGroupbox('Main')
-local player1 = Tabs.Main:AddRightGroupbox('Player')
-
-Main1:AddToggle('autowin', {
-    Text = 'Auto Win 95%',
-    Default = false, -- Default value (true / false)
-    Tooltip = 'Auto Win 95% / ออโต้ชนะ 95%', -- Information shown when you hover over the toggle
-    Callback = function(Value)
-        _G.autowin = Value
-		autowin()
+function fixchar(Character)
+    if not Character then
+        return 
     end
-})
-
-Main1:AddToggle('autoblock', {
-    Text = 'Auto Parry',
-    Default = false, -- Default value (true / false)
-    Tooltip = 'Auto Parry / ออโต้บล็อค', -- Information shown when you hover over the toggle
-    Callback = function(Value)
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Sussy-Tech/Scripts/main/BladeBall.lua"))()
+	wait(0.2)
+    RunService.RenderStepped:Wait()
+    if rename_instances then
+        Character.Name = new_name
     end
-})
-
--- player
-
-player1:AddSlider('speed', {
-    Text = 'Walkspeed',
-    Default = 16,
-    Min = 16,
-    Max = 500,
-    Rounding = 1,
-    Compact = true, -- If set to true, then it will hide the label
-        
-    Callback = function(Value)
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+	if clear_avatar then
+    	Players.LocalPlayer:ClearCharacterAppearance()
+	end
+    wait(0.1)
+    if flush_body_colors then
+        local bc = Character:FindFirstChildOfClass("BodyColors")
+        if bc then
+            for _, c in pairs({
+                "HeadColor",
+                "LeftArmColor",
+                "LeftLegColor",
+                "RightArmColor",
+                "RightLegColor",
+                "TorsoColor"
+            }) do
+                bc[c] = (typeof(bc[c]) == "BrickColor" and BrickColor.Random()) or bc[c]
+            end
+        else
+            local h = Character:FindFirstChildOfClass("Humanoid")
+            if h then
+                for _, limb in pairs(Character:GetChildren()) do
+                    if limb:IsA("BasePart") and pcall(h.GetLimb, h, limb) then
+                        limb.BrickColor = BrickColor.Random()
+                    end
+                end
+            end
+        end
     end
-})
-
-player1:AddSlider('fov', {
-    Text = 'Fov',
-    Default = 70,
-    Min = 70,
-    Max = 200,
-    Rounding = 0,
-    Compact = true, -- If set to true, then it will hide the label
-    Callback = function(Value)
-        game.workspace.CurrentCamera.FieldOfView = Value
+end
+fixchar(Players.LocalPlayer.Character)
+Players.LocalPlayer.CharacterAppearanceLoaded:Connect(fixchar)
+Players.LocalPlayer.CharacterAdded:Connect(fixchar)
+if deep_scan then
+    game.ItemChanged:Connect(function(obj, property)
+        if not rename_instances and "Name" == property then
+            return 
+        end
+        local s, v = pcall(function()
+            return obj[property]
+        end)
+        if s then
+            if "string" == type(v) then
+                for _, c in pairs(replaces_str) do
+                    RunService.RenderStepped:Wait()
+                    if string.find(obj[property], c, nil, true) then
+                        obj[property] = string.gsub(tostring(obj[property] or v), c, new_name)
+                    elseif string.find(obj[property], string.lower(c)) then
+                        obj[property] = string.gsub(tostring(obj[property] or v), string.lower(c), string.lower(new_name))
+                    elseif string.find(obj[property], string.upper(c), nil, true) then
+                        obj[property] = string.gsub(tostring(obj[property] or v), string.upper(c), string.upper(new_name))
+                    elseif string.find(string.upper(obj[property]), string.upper(c), nil, true) then
+                        obj[property] = string.gsub(tostring(obj[property] or v), casepatt(c), new_name)
+                    end
+                end
+                RunService.RenderStepped:Wait()
+                for _, c in pairs(replaces_num) do
+                    RunService.RenderStepped:Wait()
+                    if string.find(obj[property], new_id) then
+                        obj[property] = string.gsub(tostring(obj[property] or v), c, new_id)
+                    end
+                end
+            elseif "number" == type(v) then
+                v = tostring(obj[property] or v)
+                for _, c in pairs(replaces_num) do
+                    RunService.RenderStepped:Wait()
+                    if string.find(v, c) then
+                        obj[property] = tonumber(tonumber(string.gsub(v, c, new_id) or obj[property]) or obj[property])
+                    end
+                end
+            end
+        end
+    end)
+    CoreGui.DescendantAdded:Connect(replace)
+    PlayerGui.DescendantAdded:Connect(replace)
+end
+local function filterstr(s)
+    for _, data in pairs({
+        [new_name] = replaces_str,
+        [new_id] = replaces_num
+    }) do
+        for c, v in pairs(data) do
+            if string.find(s, v, nil, true) then
+                s = string.gsub(s, v, c)
+            elseif string.find(s, string.lower(v), nil, true) then
+                s = string.gsub(s, string.lower(v), string.lower(c))
+            elseif string.find(s, string.upper(v), nil, true) then
+                s = string.gsub(s, string.upper(v), string.upper(c))
+            elseif string.find(string.upper(s), string.upper(v), nil, true) then
+                s = string.gsub(s, casepatt(v), c)
+            end
+        end
     end
-})
-
-local Giant = player1:AddButton({
-    Text = 'Giant',
-    Func = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/2jnKKARG", true))()
-    end,
-    DoubleClick = false,
-})
-
-local Rejoin = player1:AddButton({
-    Text = 'Rejoin',
-    Func = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/mM7JBG5h", true))()
-    end,
-    DoubleClick = false,
-    Tooltip = 'Rejoin / รีจอย',
-})
-
-local Noclip = player1:AddButton({
-    Text = 'Noclip',
-    Func = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/hd03Vdwm", true))()
-    end,
-    DoubleClick = false,
-    Tooltip = 'Noclip / ทะลุเเมพ',
-})
-
-local Reset = player1:AddButton({
-    Text = 'Reset',
-    Func = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/EEY6SATj", true))()
-    end,
-    DoubleClick = false,
-    Tooltip = 'Reset / รีเซ็ตตัว',
-})
-
-local RTX_Summer = player1:AddButton({
-    Text = 'RTX Summer',
-    Func = function()
-        loadstring(game:HttpGet("https://paste.ee/r/h4fL2", true))()
-    end,
-    DoubleClick = false,
-    Tooltip = 'graphics / กราฟิก',
-})
-
-local RTX_Autumn = player1:AddButton({
-    Text = 'RTX Autumn',
-    Func = function()
-        loadstring(game:HttpGet("https://paste.ee/r/9eV0M", true))()
-    end,
-    DoubleClick = false,
-    Tooltip = 'graphics / กราฟิก',
-})
-
-local Anti_Report = player1:AddButton({
-    Text = 'Anti-Report',
-    Func = function()
-        loadstring(game:HttpGet("https://paste.ee/r/GphmF", true))()
-    end,
-    DoubleClick = false,
-    Tooltip = 'Anti-Report / กันรีพอร์ต - กันเเบน',
-})
-
-local spoofname = player1:AddButton({
-    Text = 'Spoof Name',
-    Func = function()
-        loadstring(game:HttpGet("https://paste.ee/p/c6swQ", true))()
-    end,
-    DoubleClick = false,
-    Tooltip = 'Spoof Name / เปลื่ยนชื่อ',
-})
-
-
--- UI Settings
-local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
-
--- I set NoUI so it does not show up in the keybinds menu
-MenuGroup:AddButton('Unload', function() Library:Unload() end) 
-MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'Insert', NoUI = true, Text = 'Menu keybind' }) 
-
-Library.ToggleKeybind = Options.MenuKeybind -- Allows you to have a custom keybind for the menu
-
--- Addons:
--- SaveManager (Allows you to have a configuration system)
--- ThemeManager (Allows you to have a menu theme system)
-
--- Hand the library over to our managers
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-
--- Ignore keys that are used by ThemeManager. 
--- (we dont want configs to save themes, do we?)
-SaveManager:IgnoreThemeSettings() 
-
--- Adds our MenuKeybind to the ignore list 
--- (do you want each config to have a different menu key? probably not.)
-SaveManager:SetIgnoreIndexes({ 'MenuKeybind' }) 
-
--- use case for doing it this way: 
--- a script hub could have themes in a global folder
--- and game configs in a separate folder per game
-ThemeManager:SetFolder('MyScriptHub')
-SaveManager:SetFolder('MyScriptHub/specific-game')
-
--- Builds our config menu on the right side of our tab
-SaveManager:BuildConfigSection(Tabs['UI Settings']) 
-
--- Builds our theme menu (with plenty of built in themes) on the left side
--- NOTE: you can also call ThemeManager:ApplyToGroupbox to add it to a specific groupbox
-ThemeManager:ApplyToTab(Tabs['UI Settings'])
-
--- You can use the SaveManager:LoadAutoloadConfig() to load a config 
--- which has been marked to be one that auto loads!
+    return s
+end
+if filter_httpget.enabled and type(hookfunc or hookfunction or detour_function) == "function" then
+    local hget
+    hget = assert(hookfunction or hookfunc or detour_function, "Hook function required for filter_httpget")(assert(game.HttpGet, "HttpGet required for filter_httpget"), function(shelf, u, ...)
+        if filter_httpget.request then
+            local x, e = pcall(filterstr, u)
+            if x and e then
+                u = e
+            end
+        end
+        if filter_httpget.result then
+            local result = hget(shelf, u, ...)
+            local x, e = pcall(filterstr, result)
+            if x and e then
+                return e
+            end
+        end
+        return hget(shelf, u, ...)
+    end)
+end
+scan_and_replace(true)
+while wait(1) do
+    if rename_instances then
+        Players.LocalPlayer.Name = new_name
+        if Players.LocalPlayer.Character then
+            Players.LocalPlayer.Character.Name = new_name
+        end
+    end
+    if change_id then
+        Players.LocalPlayer.UserId = tonumber(tonumber(new_id or 1) or 1)
+    end
+    scan_and_replace()
+end
